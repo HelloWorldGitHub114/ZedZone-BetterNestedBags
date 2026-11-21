@@ -2,6 +2,9 @@
 
 《隔离区》（ZED ZONE）纯客户端多层嵌套背包（包中包）全链路增强模组（BepInEx 6 IL2CPP，MIT 开源）。
 
+- **Steam 创意工坊**：https://steamcommunity.com/sharedfiles/filedetails/?id=3843482219
+- **前置依赖**：ZED ZONE Code Mod Loader（Steam Workshop ID: `3834614258`）
+
 ## 缘起与致谢
 
 感谢此前社区中套包模组作者为《隔离区》玩家带来的便利与启发。由于原模组目前在创意工坊已经下架，且日常游玩中仍存在套包物品放入快捷栏无法直接使用、以及部分建造模组联动扣料异常等痛点，本项目基于游戏本体从零独立编写并遵循 MIT 协议开源，分享给同样有需要的玩家使用。
