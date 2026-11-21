@@ -13,6 +13,9 @@ namespace ZedZone.BetterNestedBags
         [ThreadStatic]
         internal static int RemoveItemsDepth;
 
+        [ThreadStatic]
+        internal static int AddItemSyncDepth;
+
         internal static bool IsEnabled =>
             Plugin.EnableCharacterRecursion != null && Plugin.EnableCharacterRecursion.Value;
     }
@@ -221,7 +224,7 @@ namespace ZedZone.BetterNestedBags
 
             try
             {
-                __result = BasicCharacterController.FindCarriedOwnerInventoryData(characterData, m_itemData);
+                __result = NestedBagCore.FindOwnerInExtraNested(characterData, m_itemData);
             }
             catch (Exception ex)
             {
@@ -257,7 +260,7 @@ namespace ZedZone.BetterNestedBags
     }
 
     /// <summary>
-    /// 从角色身上移除指定物品实例（静态重载），表层未命中时回退到随身嵌套子包移除并刷新总负重。
+    /// 从角色身上移除指定物品实例（静态重载），表层未命中时直接定位随身嵌套子包移除并刷新总负重。
     /// </summary>
     [HarmonyPatch(typeof(BasicCharacterController), nameof(BasicCharacterController.RemoveItemFromCharacter),
         typeof(CharacterData), typeof(ItemData), typeof(bool))]
@@ -276,11 +279,8 @@ namespace ZedZone.BetterNestedBags
 
             try
             {
-                if (BasicCharacterController.RemoveCarriedItemFromCharacter(characterData, m_itemData, m_executeOnChange))
-                {
+                if (NestedBagCore.TryRemoveFromExtraNested(characterData, m_itemData, m_executeOnChange))
                     __result = true;
-                    NestedBagCore.RefreshCarriedWeights(characterData);
-                }
             }
             catch (Exception ex)
             {
@@ -290,7 +290,7 @@ namespace ZedZone.BetterNestedBags
     }
 
     /// <summary>
-    /// 从角色身上移除指定物品实例（实例重载），表层未命中时回退到随身嵌套子包移除并刷新总负重。
+    /// 从角色身上移除指定物品实例（实例重载），表层未命中时直接定位随身嵌套子包移除并刷新总负重。
     /// </summary>
     [HarmonyPatch(typeof(BasicCharacterController), nameof(BasicCharacterController.RemoveItemFromCharacter),
         typeof(ItemData))]
@@ -306,11 +306,8 @@ namespace ZedZone.BetterNestedBags
             try
             {
                 var cd = __instance.characterData;
-                if (cd != null && BasicCharacterController.RemoveCarriedItemFromCharacter(cd, itemData, true))
-                {
+                if (cd != null && NestedBagCore.TryRemoveFromExtraNested(cd, itemData, true))
                     __result = true;
-                    NestedBagCore.RefreshCarriedWeights(cd);
-                }
             }
             catch (Exception ex)
             {
@@ -414,7 +411,10 @@ namespace ZedZone.BetterNestedBags
         {
             if (__result != 0 || !executeOnChangeAction || __instance == null || m_itemData == null)
                 return;
+            if (CharacterRecursionGuard.AddItemSyncDepth > 0)
+                return;
 
+            CharacterRecursionGuard.AddItemSyncDepth++;
             try
             {
                 var player = NestedBagCore.LocalPlayer;
@@ -446,6 +446,10 @@ namespace ZedZone.BetterNestedBags
             catch (Exception ex)
             {
                 Plugin.LogOnce("inv_add_nested_sync", ex);
+            }
+            finally
+            {
+                CharacterRecursionGuard.AddItemSyncDepth--;
             }
         }
     }

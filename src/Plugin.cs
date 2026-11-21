@@ -19,7 +19,7 @@ namespace ZedZone.BetterNestedBags
     {
         public const string PluginGuid = "zedzone.betternestedbags";
         public const string PluginName = "Better Nested Bags";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginVersion = "1.0.1";
 
         internal static ManualLogSource Logs;
 

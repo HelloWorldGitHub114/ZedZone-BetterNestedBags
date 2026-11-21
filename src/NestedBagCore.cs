@@ -217,6 +217,59 @@ namespace ZedZone.BetterNestedBags
         }
 
         /// <summary>
+        /// 在全部随身容器（含多层嵌套子包）中按 IL2CPP 指针查找物品所属容器，不回调原版 BasicCharacterController 避免任何递归风险。
+        /// </summary>
+        internal static InventoryData FindOwnerInInventories(List<InventoryData> inventories, ItemData targetItem)
+        {
+            if (inventories == null || targetItem == null) return null;
+            IntPtr targetPtr = Ptr(targetItem);
+            if (targetPtr == IntPtr.Zero) return null;
+
+            for (int i = 0; i < inventories.Count; i++)
+            {
+                var inv = inventories[i];
+                var items = inv?.itemList;
+                if (items == null) continue;
+
+                for (int j = 0; j < items.Count; j++)
+                {
+                    if (Ptr(items[j]) == targetPtr)
+                        return inv;
+                }
+            }
+
+            return null;
+        }
+
+        internal static InventoryData FindOwnerInAllCarried(CharacterData cd, ItemData targetItem)
+        {
+            return FindOwnerInInventories(CollectAllCarriedInventories(cd), targetItem);
+        }
+
+        internal static InventoryData FindOwnerInExtraNested(CharacterData cd, ItemData targetItem)
+        {
+            return FindOwnerInInventories(CollectExtraNestedInventories(cd), targetItem);
+        }
+
+        /// <summary>
+        /// 直接从表层之外的随身嵌套子包中移除指定物品实例并刷新格位与总负重，完全避免回调 RemoveItemFromCharacter 引发递归。
+        /// </summary>
+        internal static bool TryRemoveFromExtraNested(CharacterData cd, ItemData targetItem, bool executeOnChange)
+        {
+            if (cd == null || targetItem == null) return false;
+            var ownerInv = FindOwnerInExtraNested(cd, targetItem);
+            if (ownerInv == null) return false;
+
+            bool removed = ownerInv.RemoveItem(targetItem, executeOnChange);
+            if (!removed) return false;
+
+            ownerInv.RefreshOccupyData();
+            ownerInv.RefreshTotalItemWeight();
+            RefreshCarriedWeights(cd);
+            return true;
+        }
+
+        /// <summary>
         /// 扣除或移除嵌套子包物品后，同步刷新角色表层容器的递归负重缓存。
         /// </summary>
         internal static void RefreshCarriedWeights(CharacterData cd)

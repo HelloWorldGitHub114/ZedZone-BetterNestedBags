@@ -16,27 +16,20 @@ namespace ZedZone.BetterNestedBags
         internal static Il2CppSystem.Collections.Generic.List<ItemData> CollectAllById(CharacterData cd, int itemId)
         {
             if (cd == null || itemId < 0) return null;
-            try
+            var list = new Il2CppSystem.Collections.Generic.List<ItemData>();
+            var invs = NestedBagCore.CollectAllCarriedInventories(cd);
+            for (int i = 0; i < invs.Count; i++)
             {
-                return BasicCharacterController.GetAllCarriedItemListById(cd, itemId);
-            }
-            catch
-            {
-                var list = new Il2CppSystem.Collections.Generic.List<ItemData>();
-                var invs = NestedBagCore.CollectAllCarriedInventories(cd);
-                for (int i = 0; i < invs.Count; i++)
+                var items = invs[i]?.itemList;
+                if (items == null) continue;
+                for (int j = 0; j < items.Count; j++)
                 {
-                    var items = invs[i]?.itemList;
-                    if (items == null) continue;
-                    for (int j = 0; j < items.Count; j++)
-                    {
-                        var it = items[j];
-                        if (it != null && it.itemId == itemId)
-                            list.Add(it);
-                    }
+                    var it = items[j];
+                    if (it != null && it.itemId == itemId)
+                        list.Add(it);
                 }
-                return list;
             }
+            return list;
         }
     }
 
@@ -154,7 +147,7 @@ namespace ZedZone.BetterNestedBags
                     return true;
 
                 // 存在于随身套包或衣服口袋内时直接装备
-                var ownerInv = BasicCharacterController.FindCarriedOwnerInventoryData(cd, item);
+                var ownerInv = NestedBagCore.FindOwnerInAllCarried(cd, item);
                 if (ownerInv == null) return true;
 
                 if (!ShortcutManager.TryReleaseLiftingBlueprint())
@@ -193,7 +186,7 @@ namespace ZedZone.BetterNestedBags
             try
             {
                 var cd = __instance.characterData;
-                if (cd != null && BasicCharacterController.FindCarriedOwnerInventoryData(cd, itemData) != null)
+                if (cd != null && NestedBagCore.FindOwnerInAllCarried(cd, itemData) != null)
                     __result = true;
             }
             catch (Exception ex)
